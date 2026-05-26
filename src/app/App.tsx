@@ -79,6 +79,140 @@ const DetailPhoto = ({ imageUrl, loading }: { imageUrl: string | null; loading: 
   );
 };
 
+// ── Komponen form dipindah ke LUAR App ──────────────────────────────────────
+// Ini penting! Kalau didefinisikan di dalam App, setiap render ulang
+// React membuat komponen baru sehingga input kehilangan fokus.
+
+const KeteranganCard = () => (
+  <div className="bg-[#1a2332] rounded-2xl shadow-lg p-4 border border-[#243044]">
+    <div className="flex items-center gap-2 mb-3">
+      <Info size={15} className="text-[#38bdf8]" />
+      <h3 className="text-[14px] text-gray-300">Keterangan Klasifikasi</h3>
+    </div>
+    {[
+      { label: "Normal",   desc: "Lensa mata jernih, tidak ditemukan kekeruhan.",      color: "bg-emerald-500" },
+      { label: "Immature", desc: "Kekeruhan sebagian, lensa belum sepenuhnya keruh.",  color: "bg-amber-500"   },
+      { label: "Mature",   desc: "Lensa mata sepenuhnya keruh, perlu tindakan medis.", color: "bg-red-500"     },
+    ].map(item => (
+      <div key={item.label} className="flex items-start gap-2.5 mb-2">
+        <span className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${item.color}`}></span>
+        <div>
+          <span className="text-[12px] text-gray-200 font-semibold">{item.label}:</span>
+          <span className="text-[12px] text-gray-500"> {item.desc}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+type FormPasienProps = {
+  latestCapture: LatestCapture | null;
+  alreadySaved: boolean;
+  formNama: string;
+  formUsia: string;
+  formKelamin: string;
+  formSaving: boolean;
+  formMsg: { type: "ok" | "err"; text: string } | null;
+  setFormNama: (v: string) => void;
+  setFormUsia: (v: string) => void;
+  setFormKelamin: (v: string) => void;
+  onSimpan: () => void;
+};
+
+const FormPasienCard = ({
+  latestCapture, alreadySaved,
+  formNama, formUsia, formKelamin,
+  formSaving, formMsg,
+  setFormNama, setFormUsia, setFormKelamin,
+  onSimpan,
+}: FormPasienProps) => (
+  <div className="bg-[#1a2332] rounded-2xl shadow-lg border border-[#243044] overflow-hidden">
+    <div className="px-5 pt-4 pb-3 border-b border-[#243044] flex items-center gap-2">
+      <User size={15} className="text-[#34d399]" />
+      <h3 className="text-[14px] text-gray-200">Data Pasien</h3>
+      {alreadySaved && (
+        <span className="ml-auto text-[10px] bg-emerald-900/40 border border-emerald-700 text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle2 size={10} /> Tersimpan
+        </span>
+      )}
+      {!latestCapture && (
+        <span className="ml-auto text-[10px] text-gray-600">Menunggu foto dari ESP32...</span>
+      )}
+    </div>
+    <div className="p-5 flex flex-col gap-3">
+      {latestCapture && !alreadySaved && (
+        <div className="bg-amber-900/20 border border-amber-800/50 rounded-xl px-3 py-2 flex items-center gap-2">
+          <AlertCircle size={12} className="text-amber-400 shrink-0" />
+          <span className="text-[11px] text-amber-400">Foto #{latestCapture.id} belum memiliki data pasien. Isi dan simpan.</span>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Nama Lengkap Pasien</label>
+          <input
+            type="text"
+            value={formNama}
+            onChange={e => setFormNama(e.target.value)}
+            placeholder="Contoh: Ahmad Budi Santoso"
+            disabled={alreadySaved || !latestCapture}
+            className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none placeholder-gray-600 disabled:opacity-50"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Usia (tahun)</label>
+            <input
+              type="number"
+              value={formUsia}
+              onChange={e => setFormUsia(e.target.value)}
+              placeholder="Contoh: 55"
+              min="1"
+              max="120"
+              disabled={alreadySaved || !latestCapture}
+              className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none placeholder-gray-600 disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Jenis Kelamin</label>
+            <select
+              value={formKelamin}
+              onChange={e => setFormKelamin(e.target.value)}
+              disabled={alreadySaved || !latestCapture}
+              className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none disabled:opacity-50"
+            >
+              <option value="">-- Pilih --</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {formMsg && (
+        <div className={`rounded-xl px-3 py-2 flex items-start gap-2 text-[12px] ${formMsg.type === "ok" ? "bg-emerald-900/30 border border-emerald-800 text-emerald-400" : "bg-red-900/30 border border-red-800 text-red-400"}`}>
+          {formMsg.type === "ok" ? <CheckCircle2 size={13} className="shrink-0 mt-0.5" /> : <AlertCircle size={13} className="shrink-0 mt-0.5" />}
+          {formMsg.text}
+        </div>
+      )}
+
+      <button
+        onClick={onSimpan}
+        disabled={formSaving || alreadySaved || !latestCapture}
+        className="w-full bg-[#0d2e24] hover:bg-[#1a5c42] border border-[#1a5c42] rounded-xl py-2.5 text-[13px] text-[#34d399] font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {formSaving
+          ? <><div className="w-3.5 h-3.5 border-2 border-[#34d399] border-t-transparent rounded-full animate-spin" /> Menyimpan...</>
+          : alreadySaved
+          ? <><CheckCircle2 size={14} /> Data Sudah Tersimpan</>
+          : <><Save size={14} /> Simpan Data Pasien ke MySQL</>
+        }
+      </button>
+    </div>
+  </div>
+);
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export default function App() {
   const [activeTab, setActiveTab]   = useState<"latest" | "history" | "stats">("latest");
   const [connected, setConnected]   = useState(false);
@@ -203,106 +337,14 @@ export default function App() {
   const latestImgSrc  = latestCapture?.image_url ?? (latestCapture?.image_base64 ? `data:image/jpeg;base64,${latestCapture.image_base64}` : null);
   const alreadySaved  = latestCapture ? savedId === latestCapture.id : false;
 
-  const KeteranganCard = () => (
-    <div className="bg-[#1a2332] rounded-2xl shadow-lg p-4 border border-[#243044]">
-      <div className="flex items-center gap-2 mb-3">
-        <Info size={15} className="text-[#38bdf8]" />
-        <h3 className="text-[14px] text-gray-300">Keterangan Klasifikasi</h3>
-      </div>
-      {[
-        { label: "Normal",   desc: "Lensa mata jernih, tidak ditemukan kekeruhan.",      color: "bg-emerald-500" },
-        { label: "Immature", desc: "Kekeruhan sebagian, lensa belum sepenuhnya keruh.",  color: "bg-amber-500"   },
-        { label: "Mature",   desc: "Lensa mata sepenuhnya keruh, perlu tindakan medis.", color: "bg-red-500"     },
-      ].map(item => (
-        <div key={item.label} className="flex items-start gap-2.5 mb-2">
-          <span className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${item.color}`}></span>
-          <div>
-            <span className="text-[12px] text-gray-200 font-semibold">{item.label}:</span>
-            <span className="text-[12px] text-gray-500"> {item.desc}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const FormPasienCard = () => (
-    <div className="bg-[#1a2332] rounded-2xl shadow-lg border border-[#243044] overflow-hidden">
-      <div className="px-5 pt-4 pb-3 border-b border-[#243044] flex items-center gap-2">
-        <User size={15} className="text-[#34d399]" />
-        <h3 className="text-[14px] text-gray-200">Data Pasien</h3>
-        {alreadySaved && (
-          <span className="ml-auto text-[10px] bg-emerald-900/40 border border-emerald-700 text-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-            <CheckCircle2 size={10} /> Tersimpan
-          </span>
-        )}
-        {!latestCapture && (
-          <span className="ml-auto text-[10px] text-gray-600">Menunggu foto dari ESP32...</span>
-        )}
-      </div>
-      <div className="p-5 flex flex-col gap-3">
-        {latestCapture && !alreadySaved && (
-          <div className="bg-amber-900/20 border border-amber-800/50 rounded-xl px-3 py-2 flex items-center gap-2">
-            <AlertCircle size={12} className="text-amber-400 shrink-0" />
-            <span className="text-[11px] text-amber-400">Foto #{latestCapture.id} belum memiliki data pasien. Isi dan simpan.</span>
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-3">
-          <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Nama Lengkap Pasien</label>
-            <input
-              type="text" value={formNama} onChange={e => setFormNama(e.target.value)}
-              placeholder="Contoh: Ahmad Budi Santoso"
-              disabled={alreadySaved || !latestCapture}
-              className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none placeholder-gray-600 disabled:opacity-50"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Usia (tahun)</label>
-              <input
-                type="number" value={formUsia} onChange={e => setFormUsia(e.target.value)}
-                placeholder="Contoh: 55" min="1" max="120"
-                disabled={alreadySaved || !latestCapture}
-                className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none placeholder-gray-600 disabled:opacity-50"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Jenis Kelamin</label>
-              <select
-                value={formKelamin} onChange={e => setFormKelamin(e.target.value)}
-                disabled={alreadySaved || !latestCapture}
-                className="w-full bg-[#111a27] border border-[#243044] focus:border-[#34d399] rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none disabled:opacity-50"
-              >
-                <option value="">-- Pilih --</option>
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {formMsg && (
-          <div className={`rounded-xl px-3 py-2 flex items-start gap-2 text-[12px] ${formMsg.type === "ok" ? "bg-emerald-900/30 border border-emerald-800 text-emerald-400" : "bg-red-900/30 border border-red-800 text-red-400"}`}>
-            {formMsg.type === "ok" ? <CheckCircle2 size={13} className="shrink-0 mt-0.5" /> : <AlertCircle size={13} className="shrink-0 mt-0.5" />}
-            {formMsg.text}
-          </div>
-        )}
-
-        <button
-          onClick={handleSimpan}
-          disabled={formSaving || alreadySaved || !latestCapture}
-          className="w-full bg-[#0d2e24] hover:bg-[#1a5c42] border border-[#1a5c42] rounded-xl py-2.5 text-[13px] text-[#34d399] font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {formSaving
-            ? <><div className="w-3.5 h-3.5 border-2 border-[#34d399] border-t-transparent rounded-full animate-spin" /> Menyimpan...</>
-            : alreadySaved
-            ? <><CheckCircle2 size={14} /> Data Sudah Tersimpan</>
-            : <><Save size={14} /> Simpan Data Pasien ke MySQL</>
-          }
-        </button>
-      </div>
-    </div>
-  );
+  // Props yang dioper ke FormPasienCard
+  const formProps: FormPasienProps = {
+    latestCapture, alreadySaved,
+    formNama, formUsia, formKelamin,
+    formSaving, formMsg,
+    setFormNama, setFormUsia, setFormKelamin,
+    onSimpan: handleSimpan,
+  };
 
   const LatestCaptureCard = () => (
     <div className="bg-[#1a2332] rounded-2xl shadow-lg overflow-hidden border border-[#243044]">
@@ -390,7 +432,8 @@ export default function App() {
   const TangkapanContent = () => (
     <div className="flex flex-col gap-4">
       <LatestCaptureCard />
-      <FormPasienCard />
+      {/* Render FormPasienCard sebagai komponen stabil dengan props */}
+      <FormPasienCard {...formProps} />
       <KeteranganCard />
     </div>
   );
@@ -677,7 +720,8 @@ export default function App() {
             <div className="grid grid-cols-2 gap-6 max-w-6xl mx-auto">
               <div className="flex flex-col gap-5"><LatestCaptureCard /></div>
               <div className="flex flex-col gap-5">
-                <FormPasienCard />
+                {/* FormPasienCard stabil karena didefinisikan di luar App */}
+                <FormPasienCard {...formProps} />
                 <KeteranganCard />
                 <div className="bg-[#1a2332] rounded-2xl p-5 border border-[#243044]">
                   <div className="flex items-center gap-2 mb-3"><Cpu size={15} className="text-[#34d399]" /><h3 className="text-[14px] text-gray-300">Informasi Perangkat</h3></div>
